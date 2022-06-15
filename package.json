@@ -1,0 +1,33 @@
+{
+  "name": "ed-card-api",
+  "version": "1.0.0",
+  "description": "ED Card API",
+  "main": "index.js",
+  "scripts": {
+    "migrate_down": "node node_modules/db-migrate/bin/db-migrate down -c 1 --config ./database.json",
+    "migrate_up": "node node_modules/db-migrate/bin/db-migrate up -c 1 --config ./database.json",
+    "migrate_up_all": "node node_modules/db-migrate/bin/db-migrate up --config ./database.json",
+    "style-watch": "onchange '**/*.js' -- prettier --write {{changed}}",
+    "style-check": "prettier --check '**/*.js'",
+    "style-format": "prettier --write '**/*.js'",
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "first-time-setup": "node ./scripts/firstTimeSetup.js",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "body-parser": "^1.20.0",
+    "db-migrate": "^0.11.13",
+    "db-migrate-pg": "^1.2.2",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "pg": "^8.7.3",
+    "sequelize": "^6.20.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.16"
+  }
+}
