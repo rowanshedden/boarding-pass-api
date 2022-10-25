@@ -29,31 +29,29 @@ server.listen(process.env.CONTROLLERPORT || 3100, () =>
 //(AmmonBurgi) Set server timeout to support the prolonged requests on verification.
 server.setTimeout(1000 * 60 * 35);
 
-// app.post('/api/credentials', (req, res) => {
-//   const credentialData = req.body
+app.post('/api/credentials', (req, res) => {
+  const credentialData = req.body
 
-//   Axios({
-//       method: 'POST',
-//       url: `${process.env.BOARDING_PASS_ISSUER_API}/api/credentials`,
-//       data: credentialData,
-//       headers: {
-//         "x-api-key": process.env.GOVERNMENT_APIKEY
-//       },
-//     }).then(credResponse => {
-//       if (credResponse.data.success) {
-//         res.status(200).send({message: credResponse.data.success})
-//       } else {
-//         res.status(401).json({message: 'Trusted Traveler failed to issue!', error: ''})
-//       }
-//     }).catch(err => {
-//       console.error(err)
-//       res.status(500).json({message: 'Credentials issuance failed!', error: err})
-//     })
-// })
+  Axios({
+      method: 'POST',
+      url: `${process.env.BOARDING_PASS_ISSUER_API}/api/credentials`,
+      data: credentialData,
+      // headers: {
+      //   "x-api-key": process.env.GOVERNMENT_APIKEY
+      // },
+    }).then(credResponse => {
+      if (credResponse.data.success) {
+        res.status(200).send({message: credResponse.data.success})
+      } else {
+        res.status(401).json({message: 'Trusted Traveler failed to issue!', error: ''})
+      }
+    }).catch(err => {
+      console.error(err)
+      res.status(500).json({message: 'Credentials issuance failed!', error: err})
+    })
+})
 
 app.post("/api/verifications", async (req, res) => {
-  //TODO: Create a schema array
-
   const schemas = [
     {
       schema_id: process.env.SCHEMA_DTC_TYPE1_IDENTITY,
@@ -152,8 +150,8 @@ app.post("/api/verifications", async (req, res) => {
   }
 
   if (verificationComplete === true) {
-    console.log("Verification response:", verification.data);
-    res.status(200).send(verification.data);
+    console.log("Verification response:", verificationResponse);
+    res.status(200).send({verificationRecords: verificationResponse});
   } else {
     res.status(400).send({ message: "Verification could not be processed" });
   }
