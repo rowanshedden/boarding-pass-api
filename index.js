@@ -36,9 +36,9 @@ app.post('/api/credentials', (req, res) => {
       method: 'POST',
       url: `${process.env.BOARDING_PASS_ISSUER_API}/api/credentials`,
       data: credentialData,
-      // headers: {
-      //   "x-api-key": process.env.GOVERNMENT_APIKEY
-      // },
+      headers: {
+        "x-api-key": process.env.BOARDING_PASS_ISSUER_APIKEY
+      },
     }).then(credResponse => {
       if (credResponse.data.success) {
         res.status(200).send({message: credResponse.data.success})
@@ -113,6 +113,9 @@ app.post("/api/verifications", async (req, res) => {
     method: "POST",
     url: `${process.env.BOARDING_PASS_ISSUER_API}/api/verifications`,
     data: verificationData,
+    headers: {
+      "x-api-key": process.env.BOARDING_PASS_ISSUER_APIKEY
+    },
   });
   let verificationResponse = verification.data;
 
@@ -134,6 +137,9 @@ app.post("/api/verifications", async (req, res) => {
         let verificationRecord = await Axios({
           method: "GET",
           url: `${process.env.BOARDING_PASS_ISSUER_API}/api/verifications/${verRecord.verification_id}`,
+          headers: {
+            "x-api-key": process.env.BOARDING_PASS_ISSUER_APIKEY
+          },
         });
 
         newVerificationResponse.push(verificationRecord.data);
@@ -176,6 +182,9 @@ app.post("/api/invitations", (req, res) => {
       invitation_active_starting_at: null,
       invitation_active_ending_at: null,
       uses_allowed: "",
+    },
+    headers: {
+      "x-api-key": process.env.BOARDING_PASS_ISSUER_APIKEY
     },
   })
     .then((invitation) => {
