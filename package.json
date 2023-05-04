@@ -29,7 +29,7 @@
     "luxon": "^3.3.0",
     "pg": "^8.7.3",
     "sequelize": "^6.20.1",
-    "sita-dtc": "file:sita-dtc-v0.0.3.tgz"
+    "sita-dtc": "file:sita-dtc-v0.0.8.tgz"
   },
   "devDependencies": {
     "nodemon": "^2.0.16"
