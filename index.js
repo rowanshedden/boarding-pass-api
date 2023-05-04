@@ -18,7 +18,7 @@ let server = http.createServer(app);
 module.exports.server = server;
 
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(process.env.API_REQUEST_LIMIT ? bodyParser.json({limit: process.env.API_REQUEST_LIMIT}) : bodyParser.json());
 
 server.listen(process.env.CONTROLLERPORT || 3100, () =>
   console.log(
