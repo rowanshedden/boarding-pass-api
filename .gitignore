@@ -67,7 +67,7 @@ typings/
 # Output of 'npm pack'
 *.tgz
 !*jp2-to-jpeg-v0.0.1.tgz
-!*sita-dtc-v0.0.9.tgz
+!*sita-dtc-v0.0.12.tgz
 
 # Yarn Integrity file
 .yarn-integrity

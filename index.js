@@ -18,7 +18,11 @@ let server = http.createServer(app);
 module.exports.server = server;
 
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(process.env.API_REQUEST_LIMIT ? bodyParser.json({limit: process.env.API_REQUEST_LIMIT}) : bodyParser.json());
+app.use(
+  process.env.API_REQUEST_LIMIT
+    ? bodyParser.json({ limit: process.env.API_REQUEST_LIMIT })
+    : bodyParser.json()
+);
 
 server.listen(process.env.CONTROLLERPORT || 3100, () =>
   console.log(
@@ -321,20 +325,29 @@ app.post("/api/verifications", async (req, res) => {
         let newRecord = record;
         let newResultData = newRecord.result_data;
 
-        // (AmmonBurgi) Find the verified DTC and convert the decoded image to a JPG...add it to the result data to pass back to the client
-        for (let i = 0; i < newRecord.result_data.length; i++) {
-          if (newRecord.result_data[i].name === "dtc") {
-            const decodedDTC = new DTC({
-              base64: newRecord.result_data[i].value,
-            });
-            const chipPhoto = decodedDTC.photo;
-            const jpgPhoto = imageConversion(chipPhoto);
-            newResultData = [
-              ...newResultData,
-              { name: "chip-photo", value: jpgPhoto },
-            ];
+        const foundChipPhoto = newResultData.find(
+          (data) => data.name === "chip-photo"
+        );
 
-            break;
+        if (!foundChipPhoto) {
+          // (AmmonBurgi) Find the verified DTC and convert the decoded image to a JPG...add it to the result data to pass back to the client
+          for (let i = 0; i < newRecord.result_data.length; i++) {
+            if (newRecord.result_data[i].name === "dtc") {
+              let decodedDTC = new DTC({
+                base64: newRecord.result_data[i].value,
+              });
+              decodedDTC = new DTC(decodedDTC.dtcDataProps);
+
+              const chipPhoto = decodedDTC.photo;
+
+              const jpgPhoto = imageConversion(chipPhoto);
+              newResultData = [
+                ...newResultData,
+                { name: "chip-photo", value: jpgPhoto },
+              ];
+
+              break;
+            }
           }
         }
 
