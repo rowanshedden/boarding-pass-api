@@ -36,6 +36,68 @@ server.listen(process.env.CONTROLLERPORT || 3100, () =>
 //(AmmonBurgi) Set server timeout to support the prolonged requests on verification.
 server.setTimeout(1000 * 60 * 35);
 
+app.get("/api/connections/:id", async (req, res) => {
+  //(AmmonBurgi) If request is closed, use variable to stop polling request.
+  let closed = false;
+  req.on("close", () => {
+    closed = true;
+  });
+
+  const connectionId = req.params.id;
+
+  const response = await Axios({
+    method: "GET",
+    url: `${process.env.BOARDING_PASS_ISSUER_API}/api/connections/${connectionId}`,
+    headers: {
+      "x-api-key": process.env.BOARDING_PASS_ISSUER_APIKEY,
+    },
+  });
+
+  let connection = response.data.connection;
+  let x = 0;
+
+  //(AmmonBurgi) Pull for connection until we receive the desired state or until we timeout.
+  while (
+    (!connection ||
+      !["request", "response", "active", "completed"].includes(
+        connection.state
+      )) &&
+    x < 720 &&
+    !closed
+  ) {
+    function sleep(ms) {
+      return new Promise((resolveFunc) => setTimeout(resolveFunc, ms));
+    }
+
+    await sleep(5000);
+
+    console.log("---Searching for connection record---");
+    connection = await Axios({
+      method: "GET",
+      url: `${process.env.BOARDING_PASS_ISSUER_API}/api/connections/${connectionId}`,
+      headers: {
+        "x-api-key": process.env.BOARDING_PASS_ISSUER_APIKEY,
+      },
+    });
+    connection = connection.data.connection;
+
+    x++;
+  }
+
+  if (closed) {
+    return res.end();
+  }
+
+  if (
+    connection &&
+    ["request", "response", "active", "completed"].includes(connection.state)
+  ) {
+    res.sendStatus(200);
+  } else {
+    res.status(404).send({ message: "Failed to find connection!", error: "" });
+  }
+});
+
 app.post("/api/credentials", (req, res) => {
   const data = req.body;
   const credentialData = data.credentialData;
@@ -214,6 +276,12 @@ app.post("/api/credentials", (req, res) => {
 });
 
 app.post("/api/verifications", async (req, res) => {
+  //(AmmonBurgi) If request is closed, use variable to stop polling request.
+  let closed = false;
+  req.on("close", () => {
+    closed = true;
+  });
+
   const schemas = [
     {
       schema_id: process.env.SCHEMA_DTC_TYPE1_IDENTITY,
@@ -281,7 +349,7 @@ app.post("/api/verifications", async (req, res) => {
   });
 
   let x = 0;
-  while (verificationComplete !== true && x < 720) {
+  while (verificationComplete !== true && x < 720 && !closed) {
     function sleep(ms) {
       return new Promise((resolveFunc) => setTimeout(resolveFunc, ms));
     }
@@ -313,6 +381,10 @@ app.post("/api/verifications", async (req, res) => {
     x++;
   }
 
+  if (closed) {
+    return res.end();
+  }
+
   if (verificationComplete === true) {
     console.log(verificationResponse);
     const findResults = verificationResponse.filter(
@@ -325,31 +397,31 @@ app.post("/api/verifications", async (req, res) => {
         let newRecord = record;
         let newResultData = newRecord.result_data;
 
-        const foundChipPhoto = newResultData.find(
-          (data) => data.name === "chip-photo"
-        );
+        // const foundChipPhoto = newResultData.find(
+        //   (data) => data.name === "chip-photo"
+        // );
 
-        if (!foundChipPhoto) {
-          // (AmmonBurgi) Find the verified DTC and convert the decoded image to a JPG...add it to the result data to pass back to the client
-          for (let i = 0; i < newRecord.result_data.length; i++) {
-            if (newRecord.result_data[i].name === "dtc") {
-              let decodedDTC = new DTC({
-                base64: newRecord.result_data[i].value,
-              });
-              decodedDTC = new DTC(decodedDTC.dtcDataProps);
+        // if (!foundChipPhoto) {
+        //   // (AmmonBurgi) Find the verified DTC and convert the decoded image to a JPG...add it to the result data to pass back to the client
+        //   for (let i = 0; i < newRecord.result_data.length; i++) {
+        //     if (newRecord.result_data[i].name === "dtc") {
+        //       let decodedDTC = new DTC({
+        //         base64: newRecord.result_data[i].value,
+        //       });
+        //       decodedDTC = new DTC(decodedDTC.dtcDataProps);
 
-              const chipPhoto = decodedDTC.photo;
+        //       const chipPhoto = decodedDTC.photo;
 
-              const jpgPhoto = imageConversion(chipPhoto);
-              newResultData = [
-                ...newResultData,
-                { name: "chip-photo", value: jpgPhoto },
-              ];
+        //       const jpgPhoto = imageConversion(chipPhoto);
+        //       newResultData = [
+        //         ...newResultData,
+        //         { name: "chip-photo", value: jpgPhoto },
+        //       ];
 
-              break;
-            }
-          }
-        }
+        //       break;
+        //     }
+        //   }
+        // }
 
         newRecord.result_data = newResultData;
         return newRecord;
@@ -368,9 +440,7 @@ app.post("/api/verifications", async (req, res) => {
   }
 });
 
-// QR code
 app.post("/api/invitations", (req, res) => {
-  console.log(process.env.BOARDING_PASS_ISSUER_API);
   Axios({
     method: "POST",
     url: `${process.env.BOARDING_PASS_ISSUER_API}/api/invitations`,
@@ -394,13 +464,49 @@ app.post("/api/invitations", (req, res) => {
     },
   })
     .then((invitation) => {
-      res.status(200).send(invitation.data);
+      if (!invitation.data.invitation_id) {
+        return res.status(500).send({
+          message: "Failed to retrieve invitation data!",
+          error: "",
+        });
+      }
+
+      Axios({
+        method: "GET",
+        url: `${process.env.BOARDING_PASS_ISSUER_API}/api/invitations/${invitation.data.invitation_id}`,
+        headers: {
+          "x-api-key": process.env.BOARDING_PASS_ISSUER_APIKEY,
+        },
+      })
+        .then((record) => {
+          if (!record.data.invitation) {
+            return res.status(500).send({
+              message: "Failed to retrieve invitation record!",
+              error: "",
+            });
+          }
+
+          const { invitation_id, invitation_url, contact_id, connection_id } =
+            record.data.invitation;
+          res.status(200).send({
+            invitation_id,
+            invitation_url,
+            contact_id,
+            connection_id,
+          });
+        })
+        .catch((err) => {
+          console.error(err);
+          res
+            .status(500)
+            .send({ message: "Failed to create invitation!", error: err });
+        });
     })
     .catch((err) => {
       console.error(err);
       res
         .status(500)
-        .json({ message: "Failed to retrieve invitation!", error: err });
+        .send({ message: "Failed to create invitation!", error: err });
     });
 });
 
