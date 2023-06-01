@@ -397,31 +397,31 @@ app.post("/api/verifications", async (req, res) => {
         let newRecord = record;
         let newResultData = newRecord.result_data;
 
-        // const foundChipPhoto = newResultData.find(
-        //   (data) => data.name === "chip-photo"
-        // );
+        const foundChipPhoto = newResultData.find(
+          (data) => data.name === "chip-photo"
+        );
 
-        // if (!foundChipPhoto) {
-        //   // (AmmonBurgi) Find the verified DTC and convert the decoded image to a JPG...add it to the result data to pass back to the client
-        //   for (let i = 0; i < newRecord.result_data.length; i++) {
-        //     if (newRecord.result_data[i].name === "dtc") {
-        //       let decodedDTC = new DTC({
-        //         base64: newRecord.result_data[i].value,
-        //       });
-        //       decodedDTC = new DTC(decodedDTC.dtcDataProps);
+        if (!foundChipPhoto) {
+          // (AmmonBurgi) Find the verified DTC and convert the decoded image to a JPG...add it to the result data to pass back to the client
+          for (let i = 0; i < newRecord.result_data.length; i++) {
+            if (newRecord.result_data[i].name === "dtc") {
+              let decodedDTC = new DTC({
+                base64: newRecord.result_data[i].value,
+              });
+              decodedDTC = new DTC(decodedDTC.dtcDataProps);
 
-        //       const chipPhoto = decodedDTC.photo;
+              const chipPhoto = decodedDTC.photo;
 
-        //       const jpgPhoto = imageConversion(chipPhoto);
-        //       newResultData = [
-        //         ...newResultData,
-        //         { name: "chip-photo", value: jpgPhoto },
-        //       ];
+              const jpgPhoto = imageConversion(chipPhoto);
+              newResultData = [
+                ...newResultData,
+                { name: "chip-photo", value: jpgPhoto },
+              ];
 
-        //       break;
-        //     }
-        //   }
-        // }
+              break;
+            }
+          }
+        }
 
         newRecord.result_data = newResultData;
         return newRecord;
@@ -471,6 +471,7 @@ app.post("/api/invitations", (req, res) => {
         });
       }
 
+      //(AmmonBurgi) Retrieve the invitation record to get all the data the client needs.
       Axios({
         method: "GET",
         url: `${process.env.BOARDING_PASS_ISSUER_API}/api/invitations/${invitation.data.invitation_id}`,
