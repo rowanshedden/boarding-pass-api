@@ -34,7 +34,7 @@ server.listen(process.env.CONTROLLERPORT || 3100, () =>
 );
 
 //(AmmonBurgi) Set server timeout to support the prolonged requests on verification.
-server.setTimeout(1000 * 60 * 35);
+server.setTimeout(1000 * 60 * 63);
 
 app.get("/api/connections/:id", async (req, res) => {
   //(AmmonBurgi) If request is closed, use variable to stop polling request.
