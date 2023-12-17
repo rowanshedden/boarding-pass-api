@@ -1,2 +1,2 @@
-# ed-card-api
-ED Card API
+# boarding-pass-api
+AACO demonstrator reference code
